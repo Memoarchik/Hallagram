@@ -237,6 +237,7 @@ public final class MgNetworkChangeWatcher {
     }
 
     private static void scheduleRotation() {
+        if (!SharedConfig.reduceTrackingFingerprint) return;
         handler.removeCallbacks(rotateRunnable);
         handler.postDelayed(rotateRunnable, DEBOUNCE_MS);
     }
@@ -249,6 +250,7 @@ public final class MgNetworkChangeWatcher {
     }
 
     private static void rotateAllAccounts() {
+        if (!SharedConfig.reduceTrackingFingerprint) return;
         // Skip when Tor is on: every MTProto byte already leaves the device
         // through the Tor SOCKS port and exits at a Tor relay whose IP is
         // unrelated to the user's network. Passive on-path observers on the
