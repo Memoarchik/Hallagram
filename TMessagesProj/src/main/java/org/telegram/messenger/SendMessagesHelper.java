@@ -2055,6 +2055,69 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         }
     }
 
+    public boolean sendAsCopy(
+        MessageObject msgObj,
+        final long peer,
+        boolean hideCaption,
+        boolean notify,
+        int scheduleDate,
+        int scheduleRepeatPeriod,
+        MessageObject replyToTopMsg,
+        long monoForumPeerId,
+        MessageSuggestionParams suggestionParams
+    ) {
+        if (msgObj == null || msgObj.messageOwner == null) {
+            return false;
+        }
+        SendMessageParams params = new SendMessageParams();
+        params.peer = peer;
+        params.notify = notify;
+        params.scheduleDate = scheduleDate;
+        params.scheduleRepeatPeriod = scheduleRepeatPeriod;
+        params.replyToTopMsg = replyToTopMsg;
+        params.monoForumPeer = monoForumPeerId;
+        params.suggestionParams = suggestionParams;
+
+        TLRPC.MessageMedia media = msgObj.messageOwner.media;
+        if (media instanceof TLRPC.TL_messageMediaPhoto && media.photo instanceof TLRPC.TL_photo) {
+            params.photo = (TLRPC.TL_photo) media.photo;
+            if (!hideCaption) {
+                params.caption = msgObj.messageOwner.message;
+                params.entities = msgObj.messageOwner.entities;
+            }
+            params.hasMediaSpoilers = media.spoiler;
+            params.invert_media = msgObj.messageOwner.invert_media;
+        } else if (media instanceof TLRPC.TL_messageMediaDocument && media.document instanceof TLRPC.TL_document) {
+            params.document = (TLRPC.TL_document) media.document;
+            if (!hideCaption) {
+                params.caption = msgObj.messageOwner.message;
+                params.entities = msgObj.messageOwner.entities;
+            }
+            params.hasMediaSpoilers = media.spoiler;
+            params.invert_media = msgObj.messageOwner.invert_media;
+        } else if (media instanceof TLRPC.TL_messageMediaGeo || media instanceof TLRPC.TL_messageMediaGeoLive) {
+            params.location = media;
+        } else if (media instanceof TLRPC.TL_messageMediaContact) {
+            params.user = new TLRPC.TL_user();
+            params.user.phone = media.phone_number;
+            params.user.first_name = media.first_name;
+            params.user.last_name = media.last_name;
+            params.user.id = media.user_id;
+            params.user.flags |= 1;
+        } else if (media instanceof TLRPC.TL_messageMediaPoll && media.poll instanceof TLRPC.TL_poll) {
+            params.poll = (TLRPC.TL_messageMediaPoll) media;
+        } else if (media instanceof TLRPC.TL_messageMediaWebPage && media.webpage != null) {
+            params.message = msgObj.messageOwner.message;
+            params.entities = msgObj.messageOwner.entities;
+            params.webPage = media.webpage;
+        } else {
+            params.message = msgObj.messageText != null ? msgObj.messageText.toString() : (msgObj.messageOwner.message != null ? msgObj.messageOwner.message : "");
+            params.entities = msgObj.messageOwner.entities;
+        }
+        sendMessage(params);
+        return true;
+    }
+
     public int sendMessage(ArrayList<MessageObject> messages, final long peer, boolean forwardFromMyName, boolean hideCaption, boolean notify, int scheduleDate, long payStars) {
         return sendMessage(messages, peer, forwardFromMyName, hideCaption, notify, scheduleDate, null, -1, payStars);
     }
@@ -2159,6 +2222,12 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             long lastGroupedId;
             for (int a = 0; a < messages.size(); a++) {
                 MessageObject msgObj = messages.get(a);
+                boolean isProtected = (msgObj.messageOwner != null && msgObj.messageOwner.noforwards) ||
+                                      (msgObj.getDialogId() != 0 && getMessagesController().isPeerNoForwards(msgObj.getDialogId()));
+                if (isProtected && it.belloworld.mercurygram.hallagram.HallagramConfig.allowForwardingProtectedContent) {
+                    sendAsCopy(msgObj, peer, hideCaption, notify, scheduleDate, scheduleRepeatPeriod, replyToTopMsg, monoForumPeerId, suggestionParams);
+                    continue;
+                }
                 if (msgObj.getId() <= 0 || msgObj.needDrawBluredPreview()) {
                     if (msgObj.type == MessageObject.TYPE_TEXT && !TextUtils.isEmpty(msgObj.messageText)) {
                         TLRPC.WebPage webPage = msgObj.messageOwner.media != null ? msgObj.messageOwner.media.webpage : null;
@@ -2530,7 +2599,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     }
                 }
 
-                if (arr.size() == 100 || a == messages.size() - 1 || a != messages.size() - 1 && messages.get(a + 1).getDialogId() != msgObj.getDialogId()) {
+                if ((arr.size() == 100 || a == messages.size() - 1 || a != messages.size() - 1 && messages.get(a + 1).getDialogId() != msgObj.getDialogId()) && !arr.isEmpty()) {
                     getMessagesStorage().putMessages(new ArrayList<>(arr), false, true, false, 0, scheduleDate != 0 ? 1 : 0, 0);
                     getMessagesController().updateInterfaceWithMessages(peer, objArr, scheduleDate != 0 ? 1 : 0);
                     getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
