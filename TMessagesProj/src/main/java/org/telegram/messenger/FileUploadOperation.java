@@ -121,7 +121,8 @@ public class FileUploadOperation {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("start upload on slow network = " + slowNetwork);
             }
-            for (int a = 0, count = (slowNetwork ? initialRequestsSlowNetworkCount : initialRequestsCount); a < count; a++) {
+            int initialCount = slowNetwork ? initialRequestsSlowNetworkCount : (it.belloworld.mercurygram.hallagram.HallagramConfig.uploadSpeedBoost ? 16 : initialRequestsCount);
+            for (int a = 0; a < initialCount; a++) {
                 startUploadRequest();
             }
         });
@@ -317,7 +318,8 @@ public class FileUploadOperation {
                     }
                     uploadChunkSize = chunkSize;
                 }
-                maxRequestsCount = Math.max(1, (slowNetwork ? maxUploadingSlowNetworkKBytes : maxUploadingKBytes) / uploadChunkSize);
+                int maxKBytes = slowNetwork ? maxUploadingSlowNetworkKBytes : (it.belloworld.mercurygram.hallagram.HallagramConfig.uploadSpeedBoost ? 1024 * 8 : maxUploadingKBytes);
+                maxRequestsCount = Math.max(1, maxKBytes / uploadChunkSize);
 
                 if (isEncrypted) {
                     freeRequestIvs = new ArrayList<>(maxRequestsCount);

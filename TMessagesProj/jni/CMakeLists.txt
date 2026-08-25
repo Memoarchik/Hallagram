@@ -355,5 +355,12 @@ if(QUIET_BUILD)
     endforeach()
 endif()
 
-include(AndroidNdkModules)
+include(AndroidNdkModules OPTIONAL)
+if(NOT COMMAND android_ndk_import_module_cpufeatures)
+    macro(android_ndk_import_module_cpufeatures)
+        add_library(cpufeatures STATIC ${ANDROID_NDK}/sources/android/cpufeatures/cpu-features.c)
+        target_include_directories(cpufeatures PUBLIC ${ANDROID_NDK}/sources/android/cpufeatures)
+    endmacro()
+endif()
 android_ndk_import_module_cpufeatures()
+

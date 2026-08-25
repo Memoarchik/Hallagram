@@ -693,6 +693,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
 
         items.add(SettingCell.Factory.of(1, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.settings_account, getString(R.string.SettingsAccount), getString(R.string.SettingsAccountInfo)));
+        items.add(SettingCell.Factory.of(101, 0xFF43B581, 0xFF2D8B5D, R.drawable.ghost, "Hallagram Settings", "Ghost mode, privacy & custom features"));
         items.add(SettingCell.Factory.of(2, IconBackgroundColors.ORANGE.top, IconBackgroundColors.ORANGE.bottom, R.drawable.settings_chat, getString(R.string.SettingsChat), getString(R.string.SettingsChatInfo)));
         items.add(SettingCell.Factory.of(3, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_privacy, getString(R.string.SettingsPrivacySecurity), getString(R.string.SettingsPrivacySecurityInfo)));
         items.add(SettingCell.Factory.of(5, IconBackgroundColors.RED.top, IconBackgroundColors.RED.bottom, R.drawable.settings_sounds, getString(R.string.SettingsNotifications), getString(R.string.SettingsNotificationsInfo)));
@@ -846,6 +847,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 break;
             case 100:
                 presentFragment(new it.belloworld.mercurygram.ui.MercurygramSettingsActivity());
+                break;
+            case 101:
+                presentFragment(new it.belloworld.mercurygram.ui.HallagramSettingsActivity());
                 break;
 
             case 11:

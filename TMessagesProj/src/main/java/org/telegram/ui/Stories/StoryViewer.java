@@ -2893,7 +2893,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                         fragment.getParentActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
                         AndroidUtilities.logFlagSecure();
                     } else {
-                        if (!SharedConfig.disableSecureFlags) {
+                        if (!SharedConfig.disableSecureFlags && !it.belloworld.mercurygram.hallagram.HallagramConfig.allowScreenshots) {
                             fragment.getParentActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
                         }
                         AndroidUtilities.logFlagSecure();
@@ -2904,7 +2904,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                     windowLayoutParams.flags &= ~WindowManager.LayoutParams.FLAG_SECURE;
                     AndroidUtilities.logFlagSecure();
                 } else {
-                    if (!SharedConfig.disableSecureFlags) {
+                    if (!SharedConfig.disableSecureFlags && !it.belloworld.mercurygram.hallagram.HallagramConfig.allowScreenshots) {
                         windowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_SECURE;
                     }
                     AndroidUtilities.logFlagSecure();

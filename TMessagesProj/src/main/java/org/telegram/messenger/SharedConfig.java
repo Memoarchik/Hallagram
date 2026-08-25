@@ -1223,6 +1223,7 @@ public class SharedConfig {
             lastLocalId = preferences.getInt("lastLocalId", -210000);
             pushString = preferences.getString("pushString2", "");
             mgLoadConfig(preferences);
+            it.belloworld.mercurygram.hallagram.HallagramConfig.loadConfig();
             pushType = preferences.getInt("pushType", PushListenerController.PUSH_TYPE_FIREBASE);
             pushStatSent = preferences.getBoolean("pushStatSent", false);
             passportConfigJson = preferences.getString("passportConfigJson", "");

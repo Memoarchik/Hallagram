@@ -6702,6 +6702,9 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean isChatNoForwards(TLRPC.Chat chat) {
+        if (it.belloworld.mercurygram.hallagram.HallagramConfig.allowForwardingProtectedContent) {
+            return false;
+        }
         if (chat == null) {
             return false;
         }
@@ -6727,6 +6730,9 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean isUserNoForwards(TLRPC.UserFull userFull) {
+        if (it.belloworld.mercurygram.hallagram.HallagramConfig.allowForwardingProtectedContent) {
+            return false;
+        }
         if (userFull == null) {
             return false;
         }
@@ -11429,6 +11435,9 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean sendTyping(long dialogId, long threadMsgId, int action, String emojicon, int classGuid) {
+        if (it.belloworld.mercurygram.hallagram.HallagramConfig.ghostMode && it.belloworld.mercurygram.hallagram.HallagramConfig.dontSendTyping) {
+            return false;
+        }
         if (action < 0 || action >= sendingTypings.length || dialogId == 0) {
             return false;
         }

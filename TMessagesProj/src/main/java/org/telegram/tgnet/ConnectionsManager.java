@@ -383,6 +383,62 @@ public class ConnectionsManager extends BaseController {
     }
 
     private void sendRequestInternal(TLObject object, RequestDelegate onComplete, RequestDelegateTimestamp onCompleteTimestamp, QuickAckDelegate onQuickAck, WriteToSocketDelegate onWriteToSocket, int flags, int datacenterId, int connectionType, boolean immediate, int requestToken) {
+        if (object == null) {
+            return;
+        }
+
+        if (it.belloworld.mercurygram.hallagram.HallagramConfig.ghostMode) {
+            boolean shouldBlock = false;
+            TLObject mockResponse = null;
+
+            if (it.belloworld.mercurygram.hallagram.HallagramConfig.dontSendRead) {
+                if (object instanceof TLRPC.TL_messages_readHistory ||
+                    object instanceof TLRPC.TL_channels_readHistory ||
+                    object instanceof TLRPC.TL_messages_readMessageContents ||
+                    object instanceof TLRPC.TL_messages_readEncryptedHistory ||
+                    object instanceof TLRPC.TL_messages_readDiscussion ||
+                    object instanceof TLRPC.TL_messages_readReactions) {
+                    shouldBlock = true;
+                    mockResponse = new TLRPC.TL_boolTrue();
+                }
+            }
+
+            if (!shouldBlock && it.belloworld.mercurygram.hallagram.HallagramConfig.dontSendTyping) {
+                if (object instanceof TLRPC.TL_messages_setTyping) {
+                    shouldBlock = true;
+                    mockResponse = new TLRPC.TL_boolTrue();
+                }
+            }
+
+            if (!shouldBlock && it.belloworld.mercurygram.hallagram.HallagramConfig.dontSendOnline) {
+                if (object instanceof org.telegram.tgnet.tl.TL_account.updateStatus) {
+                    org.telegram.tgnet.tl.TL_account.updateStatus statusReq = (org.telegram.tgnet.tl.TL_account.updateStatus) object;
+                    if (!statusReq.offline) {
+                        shouldBlock = true;
+                        mockResponse = new TLRPC.TL_boolTrue();
+                    }
+                }
+            }
+
+            if (!shouldBlock && it.belloworld.mercurygram.hallagram.HallagramConfig.dontReadStories) {
+                if (object instanceof org.telegram.tgnet.tl.TL_stories.TL_stories_readStories) {
+                    shouldBlock = true;
+                    mockResponse = new TLRPC.TL_boolTrue();
+                }
+            }
+
+            if (shouldBlock) {
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d("Hallagram Ghost Mode intercepted & blocked: " + object);
+                }
+                final TLObject res = mockResponse;
+                if (onComplete != null) {
+                    AndroidUtilities.runOnUIThread(() -> onComplete.run(res, null));
+                }
+                return;
+            }
+        }
+
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("send request " + object + " with token = " + requestToken);
         }

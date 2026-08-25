@@ -17425,8 +17425,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 messageObject != null && (MessagesController.getInstance(currentAccount).isPeerNoForwards(messageObject.getDialogId()) ||
                 (messageObject.messageOwner != null && messageObject.messageOwner.noforwards)) || messageObject != null && messageObject.hasRevealedExtendedMedia()
             ) {
-                if (!SharedConfig.disableSecureFlags) {
+                if (!SharedConfig.disableSecureFlags && !it.belloworld.mercurygram.hallagram.HallagramConfig.allowScreenshots) {
                     windowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_SECURE;
+                } else {
+                    windowLayoutParams.flags &=~ WindowManager.LayoutParams.FLAG_SECURE;
                 }
                 AndroidUtilities.logFlagSecure();
             } else {
