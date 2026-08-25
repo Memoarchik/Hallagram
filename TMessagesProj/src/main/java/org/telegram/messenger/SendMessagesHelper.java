@@ -2104,7 +2104,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             params.user.last_name = media.last_name;
             params.user.id = media.user_id;
             params.user.flags |= 1;
-        } else if (media instanceof TLRPC.TL_messageMediaPoll && media.poll instanceof TLRPC.TL_poll) {
+        } else if (media instanceof TLRPC.TL_messageMediaPoll && ((TLRPC.TL_messageMediaPoll) media).poll instanceof TLRPC.TL_poll) {
             params.poll = (TLRPC.TL_messageMediaPoll) media;
         } else if (media instanceof TLRPC.TL_messageMediaWebPage && media.webpage != null) {
             params.message = msgObj.messageOwner.message;
