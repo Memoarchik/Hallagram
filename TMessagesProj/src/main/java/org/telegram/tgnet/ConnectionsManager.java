@@ -393,11 +393,22 @@ public class ConnectionsManager extends BaseController {
 
             if (it.belloworld.mercurygram.hallagram.HallagramConfig.dontSendRead) {
                 if (object instanceof TLRPC.TL_messages_readHistory ||
-                    object instanceof TLRPC.TL_channels_readHistory ||
-                    object instanceof TLRPC.TL_messages_readMessageContents ||
+                    object instanceof TLRPC.TL_messages_readMessageContents) {
+                    shouldBlock = true;
+                    TLRPC.TL_messages_affectedMessages affected = new TLRPC.TL_messages_affectedMessages();
+                    affected.pts = AccountInstance.getInstance(currentAccount).getMessagesController().pts;
+                    affected.pts_count = 0;
+                    mockResponse = affected;
+                } else if (object instanceof TLRPC.TL_messages_readReactions) {
+                    shouldBlock = true;
+                    TLRPC.TL_messages_affectedHistory affectedHistory = new TLRPC.TL_messages_affectedHistory();
+                    affectedHistory.pts = AccountInstance.getInstance(currentAccount).getMessagesController().pts;
+                    affectedHistory.pts_count = 0;
+                    affectedHistory.offset = 0;
+                    mockResponse = affectedHistory;
+                } else if (object instanceof TLRPC.TL_channels_readHistory ||
                     object instanceof TLRPC.TL_messages_readEncryptedHistory ||
-                    object instanceof TLRPC.TL_messages_readDiscussion ||
-                    object instanceof TLRPC.TL_messages_readReactions) {
+                    object instanceof TLRPC.TL_messages_readDiscussion) {
                     shouldBlock = true;
                     mockResponse = new TLRPC.TL_boolTrue();
                 }
@@ -423,7 +434,7 @@ public class ConnectionsManager extends BaseController {
             if (!shouldBlock && it.belloworld.mercurygram.hallagram.HallagramConfig.dontReadStories) {
                 if (object instanceof org.telegram.tgnet.tl.TL_stories.TL_stories_readStories) {
                     shouldBlock = true;
-                    mockResponse = new TLRPC.TL_boolTrue();
+                    mockResponse = new TLRPC.Vector();
                 }
             }
 
@@ -434,6 +445,8 @@ public class ConnectionsManager extends BaseController {
                 final TLObject res = mockResponse;
                 if (onComplete != null) {
                     AndroidUtilities.runOnUIThread(() -> onComplete.run(res, null));
+                } else if (onCompleteTimestamp != null) {
+                    AndroidUtilities.runOnUIThread(() -> onCompleteTimestamp.run(res, null, System.currentTimeMillis()));
                 }
                 return;
             }
