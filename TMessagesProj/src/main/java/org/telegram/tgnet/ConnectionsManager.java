@@ -458,7 +458,7 @@ public class ConnectionsManager extends BaseController {
             if (!shouldBlock && it.belloworld.mercurygram.hallagram.HallagramConfig.dontReadStories) {
                 if (object instanceof org.telegram.tgnet.tl.TL_stories.TL_stories_readStories) {
                     shouldBlock = true;
-                    mockResponse = new org.telegram.tgnet.Vector();
+                    mockResponse = new org.telegram.tgnet.Vector<>(org.telegram.tgnet.Vector.Int::TLDeserialize);
                 }
             }
 
