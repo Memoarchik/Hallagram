@@ -1232,12 +1232,13 @@ public class MessagesStorage extends BaseController {
                                 AndroidUtilities.runOnUIThread(() -> getMessagesController().doDeleteShowOnceTask(taskId, dialogId, mid));
                                 break;
                             }
-                        } catch (Throwable e) {
-                            FileLog.e(e);
-                            removePendingTask(taskId);
-                        } finally {
-                            data.reuse();
                         }
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                        removePendingTask(taskId);
+                    } finally {
+                        data.reuse();
+                    }
                     }
                 }
                 cursor.dispose();

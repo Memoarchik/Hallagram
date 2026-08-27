@@ -2,5 +2,4 @@
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@drawable/icon_cloud_background" />
     <foreground android:drawable="@mipmap/icon_cloud_foreground" />
-    <monochrome android:drawable="@mipmap/icon_cloud_foreground" />
 </adaptive-icon>
