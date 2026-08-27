@@ -392,25 +392,49 @@ public class ConnectionsManager extends BaseController {
             TLObject mockResponse = null;
 
             if (it.belloworld.mercurygram.hallagram.HallagramConfig.dontSendRead) {
-                if (object instanceof TLRPC.TL_messages_readHistory ||
-                    object instanceof TLRPC.TL_messages_readMessageContents) {
-                    shouldBlock = true;
-                    TLRPC.TL_messages_affectedMessages affected = new TLRPC.TL_messages_affectedMessages();
-                    affected.pts = AccountInstance.getInstance(currentAccount).getMessagesController().pts;
-                    affected.pts_count = 0;
-                    mockResponse = affected;
-                } else if (object instanceof TLRPC.TL_messages_readReactions) {
-                    shouldBlock = true;
-                    TLRPC.TL_messages_affectedHistory affectedHistory = new TLRPC.TL_messages_affectedHistory();
-                    affectedHistory.pts = AccountInstance.getInstance(currentAccount).getMessagesController().pts;
-                    affectedHistory.pts_count = 0;
-                    affectedHistory.offset = 0;
-                    mockResponse = affectedHistory;
-                } else if (object instanceof TLRPC.TL_channels_readHistory ||
-                    object instanceof TLRPC.TL_messages_readEncryptedHistory ||
-                    object instanceof TLRPC.TL_messages_readDiscussion) {
-                    shouldBlock = true;
-                    mockResponse = new TLRPC.TL_boolTrue();
+                boolean isInteractRead = false;
+                if (it.belloworld.mercurygram.hallagram.HallagramConfig.readOnInteract) {
+                    long now = System.currentTimeMillis();
+                    if (now - it.belloworld.mercurygram.hallagram.HallagramConfig.lastInteractTime < 10000) {
+                        long targetDialog = it.belloworld.mercurygram.hallagram.HallagramConfig.lastInteractedDialogId;
+                        if (object instanceof TLRPC.TL_messages_readHistory) {
+                            TLRPC.TL_messages_readHistory req = (TLRPC.TL_messages_readHistory) object;
+                            if (req.peer != null) {
+                                long did = req.peer.user_id != 0 ? req.peer.user_id : (req.peer.chat_id != 0 ? -req.peer.chat_id : -req.peer.channel_id);
+                                if (did == targetDialog) {
+                                    isInteractRead = true;
+                                }
+                            }
+                        } else if (object instanceof TLRPC.TL_channels_readHistory) {
+                            TLRPC.TL_channels_readHistory req = (TLRPC.TL_channels_readHistory) object;
+                            if (req.channel != null && -req.channel.channel_id == targetDialog) {
+                                isInteractRead = true;
+                            }
+                        }
+                    }
+                }
+
+                if (!isInteractRead) {
+                    if (object instanceof TLRPC.TL_messages_readHistory ||
+                        object instanceof TLRPC.TL_messages_readMessageContents) {
+                        shouldBlock = true;
+                        TLRPC.TL_messages_affectedMessages affected = new TLRPC.TL_messages_affectedMessages();
+                        affected.pts = AccountInstance.getInstance(currentAccount).getMessagesController().pts;
+                        affected.pts_count = 0;
+                        mockResponse = affected;
+                    } else if (object instanceof TLRPC.TL_messages_readReactions) {
+                        shouldBlock = true;
+                        TLRPC.TL_messages_affectedHistory affectedHistory = new TLRPC.TL_messages_affectedHistory();
+                        affectedHistory.pts = AccountInstance.getInstance(currentAccount).getMessagesController().pts;
+                        affectedHistory.pts_count = 0;
+                        affectedHistory.offset = 0;
+                        mockResponse = affectedHistory;
+                    } else if (object instanceof TLRPC.TL_channels_readHistory ||
+                        object instanceof TLRPC.TL_messages_readEncryptedHistory ||
+                        object instanceof TLRPC.TL_messages_readDiscussion) {
+                        shouldBlock = true;
+                        mockResponse = new TLRPC.TL_boolTrue();
+                    }
                 }
             }
 

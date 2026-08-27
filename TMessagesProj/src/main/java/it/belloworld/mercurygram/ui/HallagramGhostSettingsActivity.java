@@ -17,6 +17,7 @@ public class HallagramGhostSettingsActivity extends UniversalFragment {
     private static final int ID_DONT_SEND_ONLINE = 3;
     private static final int ID_DONT_SEND_TYPING = 4;
     private static final int ID_DONT_READ_STORIES = 5;
+    private static final int ID_READ_ON_INTERACT = 6;
 
     @Override
     protected CharSequence getTitle() {
@@ -36,6 +37,10 @@ public class HallagramGhostSettingsActivity extends UniversalFragment {
             items.add(UItem.asCheck(ID_DONT_SEND_READ, "Don't mark messages as read")
                     .setChecked(HallagramConfig.dontSendRead));
             items.add(UItem.asShadow("Opening chats will not send read receipts (double checkmarks)."));
+
+            items.add(UItem.asCheck(ID_READ_ON_INTERACT, "Read on interact")
+                    .setChecked(HallagramConfig.readOnInteract));
+            items.add(UItem.asShadow("Automatically mark messages as read when you send a message, media, or emoji reaction."));
 
             items.add(UItem.asCheck(ID_DONT_SEND_ONLINE, "Hide Online status")
                     .setChecked(HallagramConfig.dontSendOnline));
@@ -64,6 +69,12 @@ public class HallagramGhostSettingsActivity extends UniversalFragment {
                 break;
             case ID_DONT_SEND_READ:
                 HallagramConfig.setDontSendRead(!HallagramConfig.dontSendRead);
+                if (listView != null && listView.adapter != null) {
+                    listView.adapter.update(true);
+                }
+                break;
+            case ID_READ_ON_INTERACT:
+                HallagramConfig.setReadOnInteract(!HallagramConfig.readOnInteract);
                 if (listView != null && listView.adapter != null) {
                     listView.adapter.update(true);
                 }

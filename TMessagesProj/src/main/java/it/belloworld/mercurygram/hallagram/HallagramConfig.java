@@ -15,6 +15,15 @@ public class HallagramConfig {
     public static boolean dontSendOnline = true;
     public static boolean dontSendTyping = true;
     public static boolean dontReadStories = true;
+    public static boolean readOnInteract = true;
+
+    public static volatile long lastInteractedDialogId = 0;
+    public static volatile long lastInteractTime = 0;
+
+    public static void onUserInteract(long dialogId) {
+        lastInteractedDialogId = dialogId;
+        lastInteractTime = System.currentTimeMillis();
+    }
 
     // Speed Boost
     public static int downloadSpeedBoost = 0; // 0 = Off, 1 = Fast, 2 = Ultra
@@ -35,6 +44,7 @@ public class HallagramConfig {
         dontSendOnline = prefs.getBoolean("dontSendOnline", true);
         dontSendTyping = prefs.getBoolean("dontSendTyping", true);
         dontReadStories = prefs.getBoolean("dontReadStories", true);
+        readOnInteract = prefs.getBoolean("readOnInteract", true);
 
         downloadSpeedBoost = prefs.getInt("downloadSpeedBoost", 0);
         uploadSpeedBoost = prefs.getBoolean("uploadSpeedBoost", false);
@@ -53,6 +63,7 @@ public class HallagramConfig {
         editor.putBoolean("dontSendOnline", dontSendOnline);
         editor.putBoolean("dontSendTyping", dontSendTyping);
         editor.putBoolean("dontReadStories", dontReadStories);
+        editor.putBoolean("readOnInteract", readOnInteract);
 
         editor.putInt("downloadSpeedBoost", downloadSpeedBoost);
         editor.putBoolean("uploadSpeedBoost", uploadSpeedBoost);
@@ -84,6 +95,11 @@ public class HallagramConfig {
 
     public static void setDontReadStories(boolean value) {
         dontReadStories = value;
+        saveConfig();
+    }
+
+    public static void setReadOnInteract(boolean value) {
+        readOnInteract = value;
         saveConfig();
     }
 

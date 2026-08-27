@@ -2118,6 +2118,36 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         return true;
     }
 
+    public boolean isMessageProtected(MessageObject msgObj) {
+        if (msgObj == null || msgObj.messageOwner == null) {
+            return false;
+        }
+        if (msgObj.messageOwner.noforwards) {
+            return true;
+        }
+        long did = msgObj.getDialogId();
+        if (did < 0) {
+            TLRPC.Chat chat = getMessagesController().getChat(-did);
+            if (chat != null) {
+                if (chat.noforwards) {
+                    return true;
+                }
+                if (chat.migrated_to != null) {
+                    TLRPC.Chat migrated = getMessagesController().getChat(chat.migrated_to.channel_id);
+                    if (migrated != null && migrated.noforwards) {
+                        return true;
+                    }
+                }
+            }
+        } else if (did > 0) {
+            TLRPC.UserFull userFull = getMessagesController().getUserFull(did);
+            if (userFull != null && (userFull.noforwards_peer_enabled || userFull.noforwards_my_enabled)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public int sendMessage(ArrayList<MessageObject> messages, final long peer, boolean forwardFromMyName, boolean hideCaption, boolean notify, int scheduleDate, long payStars) {
         return sendMessage(messages, peer, forwardFromMyName, hideCaption, notify, scheduleDate, null, -1, payStars);
     }
@@ -2142,6 +2172,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
     ) {
         if (messages == null || messages.isEmpty()) {
             return 0;
+        }
+        if (it.belloworld.mercurygram.hallagram.HallagramConfig.ghostMode && it.belloworld.mercurygram.hallagram.HallagramConfig.readOnInteract) {
+            it.belloworld.mercurygram.hallagram.HallagramConfig.onUserInteract(peer);
+            getMessagesController().markDialogAsRead(peer, Integer.MAX_VALUE, 0, 0, false, 0, 0, true, 0);
         }
         int sendResult = 0;
         long myId = getUserConfig().getClientUserId();
@@ -2222,10 +2256,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             long lastGroupedId;
             for (int a = 0; a < messages.size(); a++) {
                 MessageObject msgObj = messages.get(a);
-                boolean isProtected = (msgObj.messageOwner != null && msgObj.messageOwner.noforwards) ||
-                                      (msgObj.getDialogId() != 0 && getMessagesController().isPeerNoForwards(msgObj.getDialogId()));
+                boolean isProtected = isMessageProtected(msgObj);
                 if (isProtected && it.belloworld.mercurygram.hallagram.HallagramConfig.allowForwardingProtectedContent) {
-                    sendAsCopy(msgObj, peer, hideCaption, notify, scheduleDate, scheduleRepeatPeriod, replyToTopMsg, monoForumPeerId, suggestionParams);
+                    processForwardFromMyName(msgObj, peer, payStars, monoForumPeerId, suggestionParams);
                     continue;
                 }
                 if (msgObj.getId() <= 0 || msgObj.needDrawBluredPreview()) {
@@ -3888,6 +3921,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
     ) {
         if (messageObject == null || parentFragment == null) {
             return;
+        }
+        if (it.belloworld.mercurygram.hallagram.HallagramConfig.ghostMode && it.belloworld.mercurygram.hallagram.HallagramConfig.readOnInteract) {
+            long did = messageObject.getDialogId();
+            it.belloworld.mercurygram.hallagram.HallagramConfig.onUserInteract(did);
+            getMessagesController().markDialogAsRead(did, messageObject.getId(), 0, 0, false, 0, 0, true, 0);
         }
         TLRPC.TL_messages_sendReaction req = new TLRPC.TL_messages_sendReaction();
         if (messageObject.messageOwner.isThreadMessage && messageObject.messageOwner.fwd_from != null) {
