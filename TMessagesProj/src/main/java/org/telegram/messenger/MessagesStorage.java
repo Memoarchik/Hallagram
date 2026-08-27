@@ -992,8 +992,9 @@ public class MessagesStorage extends BaseController {
                     long taskId = cursor.longValue(0);
                     NativeByteBuffer data = cursor.byteBufferValue(1);
                     if (data != null) {
-                        int type = data.readInt32(false);
-                        switch (type) {
+                        try {
+                            int type = data.readInt32(false);
+                            switch (type) {
                             case 0: {
                                 TLRPC.Chat chat = TLRPC.Chat.TLdeserialize(data, data.readInt32(false), false);
                                 if (chat != null) {
@@ -1231,8 +1232,12 @@ public class MessagesStorage extends BaseController {
                                 AndroidUtilities.runOnUIThread(() -> getMessagesController().doDeleteShowOnceTask(taskId, dialogId, mid));
                                 break;
                             }
+                        } catch (Throwable e) {
+                            FileLog.e(e);
+                            removePendingTask(taskId);
+                        } finally {
+                            data.reuse();
                         }
-                        data.reuse();
                     }
                 }
                 cursor.dispose();
@@ -4834,7 +4839,7 @@ public class MessagesStorage extends BaseController {
                         state.bindLong(16, MessageObject.getChannelId(message));
                         NativeByteBuffer customParams = MessageCustomParamsHelper.writeLocalParams(message);
                         if (customParams != null) {
-                            state.bindByteBuffer(16, customParams);
+                            state.bindByteBuffer(17, customParams);
                         } else {
                             state.bindNull(17);
                         }

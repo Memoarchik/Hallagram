@@ -693,7 +693,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
 
         items.add(SettingCell.Factory.of(100, 0xFF8F77FF, 0xFF6E5BD9, R.drawable.mg_settings, getString(R.string.MercurygramSettings), getString(R.string.MercurygramSettingsInfo)));
-        items.add(SettingCell.Factory.of(101, 0xFF43B581, 0xFF2D8B5D, R.drawable.ghost, "Hallagram Settings", "Ghost mode, speed boost & privacy"));
+        items.add(SettingCell.Factory.of(101, 0xFFF5A623, 0xFFD48806, R.drawable.msg_hallagram, "Hallagram Settings", "Ghost mode, speed boost & privacy"));
         items.add(UItem.asShadow(null));
 
         items.add(SettingCell.Factory.of(1, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.settings_account, getString(R.string.SettingsAccount), getString(R.string.SettingsAccountInfo)));

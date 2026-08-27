@@ -248,19 +248,20 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                     progress = 1f;
                 }
             } else {
-                if (destroyTime == 0) {
+                if (destroyTime == 0 || destroyTtl <= 0) {
                     progress = 1f;
                 } else {
-                    long msTime = System.currentTimeMillis() + ConnectionsManager.getInstance(currentAccount).getTimeDifference() * 1000;
+                    long msTime = System.currentTimeMillis() + (long) ConnectionsManager.getInstance(currentAccount).getTimeDifference() * 1000L;
                     progress = Math.max(0, destroyTime - msTime) / (destroyTtl * 1000.0f);
                 }
-
             }
 
             if (once) {
                 canvas.save();
                 canvas.translate(deleteProgressRect.centerX() - onceLayoutWidth / 2f, deleteProgressRect.centerY() - onceLayoutHeight / 2f);
-                onceLayout.draw(canvas);
+                if (onceLayout != null) {
+                    onceLayout.draw(canvas);
+                }
                 canvas.restore();
 
                 canvas.drawArc(deleteProgressRect, 90, 180, false, afterDeleteProgressPaint);
@@ -281,7 +282,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 final float r = dp(8);
                 drawable.setBounds((int) (cx - r), (int) (cy - r), (int) (cx + r), (int) (cy + r));
                 drawable.draw(canvas);
-                float radProgress = -360 * progress;
+                float radProgress = -360 * (Float.isNaN(progress) || Float.isInfinite(progress) ? 1.0f : progress);
                 canvas.drawArc(deleteProgressRect, -90, radProgress, false, afterDeleteProgressPaint);
                 timerParticles.draw(canvas, particlePaint, deleteProgressRect, radProgress, 1.0f);
             }
@@ -516,7 +517,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             }
         } else if (id == NotificationCenter.updateMessageMedia) {
             TLRPC.Message message = (TLRPC.Message) args[0];
-            if (currentMessageObject.getId() == message.id) {
+            if (currentMessageObject != null && message != null && currentMessageObject.getId() == message.id) {
                 if (isVideo && !videoWatchedOneTime) {
                     closeVideoAfterWatch = true;
                 } else {
@@ -969,6 +970,8 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
         if (!SharedConfig.disableSecureFlags && !it.belloworld.mercurygram.hallagram.HallagramConfig.allowScreenshots) {
             windowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_SECURE;
+        } else {
+            windowLayoutParams.flags &= ~WindowManager.LayoutParams.FLAG_SECURE;
         }
         AndroidUtilities.logFlagSecure();
         centerImage.setParentView(containerView);
@@ -1379,11 +1382,6 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             return;
         }
         final PhotoViewer.PlaceProviderObject object = provider.getPlaceForPhoto(messageObject, null, 0, true, false);
-        if (object == null) {
-            return;
-        }
-
-        //messageObject.messageOwner.destroyTime = (int) (System.currentTimeMillis() / 1000 + ConnectionsManager.getInstance().getTimeDifference()) + 4;
 
         ignoreDelete = messageObject.messageOwner.ttl == 0x7FFFFFFF;
         this.onClose = onClose;
@@ -1425,42 +1423,58 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         videoWidth = 0;
         videoHeight = 0;
 
-        final RectF _drawRegion = object.imageReceiver.getDrawRegion();
-        RectF drawRegion = new RectF(_drawRegion);
-        drawRegion.left =   Math.max(drawRegion.left,   object.imageReceiver.getImageX());
-        drawRegion.top =    Math.max(drawRegion.top,    object.imageReceiver.getImageY());
-        drawRegion.right =  Math.min(drawRegion.right,  object.imageReceiver.getImageX2());
-        drawRegion.bottom = Math.min(drawRegion.bottom, object.imageReceiver.getImageY2());
-
-        float width = drawRegion.width();
-        float height = drawRegion.height();
         int viewWidth = AndroidUtilities.displaySize.x;
         int viewHeight = AndroidUtilities.displaySize.y + AndroidUtilities.statusBarHeight;
-        scale = Math.max(width / viewWidth, height / viewHeight);
 
-        if (object.radius != null) {
-            animateFromRadius = new int[object.radius.length];
-            for (int i = 0; i < object.radius.length; ++i) {
-                animateFromRadius[i] = object.radius[i];
+        if (object != null && object.imageReceiver != null) {
+            final RectF _drawRegion = object.imageReceiver.getDrawRegion();
+            RectF drawRegion = _drawRegion != null ? new RectF(_drawRegion) : new RectF();
+            drawRegion.left =   Math.max(drawRegion.left,   object.imageReceiver.getImageX());
+            drawRegion.top =    Math.max(drawRegion.top,    object.imageReceiver.getImageY());
+            drawRegion.right =  Math.min(drawRegion.right,  object.imageReceiver.getImageX2());
+            drawRegion.bottom = Math.min(drawRegion.bottom, object.imageReceiver.getImageY2());
+
+            float width = drawRegion.width();
+            float height = drawRegion.height();
+            scale = Math.max(width / viewWidth, height / viewHeight);
+
+            if (object.radius != null) {
+                animateFromRadius = new int[object.radius.length];
+                for (int i = 0; i < object.radius.length; ++i) {
+                    animateFromRadius[i] = object.radius[i];
+                }
+            } else {
+                animateFromRadius = null;
             }
+            translationX = object.viewX + drawRegion.left + width / 2 -  viewWidth / 2;
+            translationY = object.viewY + drawRegion.top + height / 2 - viewHeight / 2;
+            clipHorizontal = Math.abs(drawRegion.left - object.imageReceiver.getImageX());
+            int clipVertical = (int) Math.abs(drawRegion.top - object.imageReceiver.getImageY());
+            int[] coords2 = new int[2];
+            if (object.parentView != null) {
+                object.parentView.getLocationInWindow(coords2);
+                clipTop = coords2[1] - 0 - (object.viewY + drawRegion.top) + object.clipTopAddition;
+                clipTop = Math.max(0, Math.max(clipTop, clipVertical));
+                clipBottom = object.viewY + drawRegion.top + (int) height - (coords2[1] + object.parentView.getHeight() - 0) + object.clipBottomAddition;
+                clipBottom = Math.max(0, Math.max(clipBottom, clipVertical));
+            } else {
+                clipTop = 0;
+                clipBottom = 0;
+            }
+
+            clipTopOrigin = Math.max(0, clipVertical);
+            clipBottomOrigin = Math.max(0, clipVertical);
         } else {
+            scale = 1.0f;
+            translationX = 0;
+            translationY = 0;
+            clipHorizontal = 0;
+            clipTop = 0;
+            clipBottom = 0;
+            clipTopOrigin = 0;
+            clipBottomOrigin = 0;
             animateFromRadius = null;
         }
-        translationX = object.viewX + drawRegion.left + width / 2 -  viewWidth / 2;
-        translationY = object.viewY + drawRegion.top + height / 2 - viewHeight / 2;
-        clipHorizontal = Math.abs(drawRegion.left - object.imageReceiver.getImageX());
-        int clipVertical = (int) Math.abs(drawRegion.top - object.imageReceiver.getImageY());
-        int[] coords2 = new int[2];
-        object.parentView.getLocationInWindow(coords2);
-        clipTop = coords2[1] - 0 - (object.viewY + drawRegion.top) + object.clipTopAddition;
-        clipTop = Math.max(0, Math.max(clipTop, clipVertical));
-        clipBottom = object.viewY + drawRegion.top + (int) height - (coords2[1] + object.parentView.getHeight() - 0) + object.clipBottomAddition;
-        clipBottom = Math.max(0, Math.max(clipBottom, clipVertical));
-
-        clipTopOrigin = 0;//coords2[1] - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight) - (object.viewY + drawRegion.top) + object.clipTopAddition;
-        clipTopOrigin = Math.max(0, Math.max(clipTopOrigin, clipVertical));
-        clipBottomOrigin = 0;//(object.viewY + drawRegion.top + (int) height) - (coords2[1] + object.parentView.getHeight() - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight)) + object.clipBottomAddition;
-        clipBottomOrigin = Math.max(0, Math.max(clipBottomOrigin, clipVertical));
 
         animationStartTime = System.currentTimeMillis();
         animateToX = 0;
@@ -1490,7 +1504,9 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             currentThumb.release();
             currentThumb = null;
         }
-        currentThumb = object.imageReceiver.getThumbBitmapSafe();
+        if (object != null && object.imageReceiver != null) {
+            currentThumb = object.imageReceiver.getThumbBitmapSafe();
+        }
         seekbarContainer.setVisibility(View.GONE);
         if (document != null) {
             for (int i = 0; i < document.attributes.size(); ++i) {
@@ -1508,20 +1524,22 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 if (messageObject.messageOwner.attachPath != null && messageObject.attachPathExists) {
                     location = ImageLocation.getForPath(messageObject.messageOwner.attachPath);
                 } else {
-                    location =ImageLocation.getForDocument(document);
+                    location = ImageLocation.getForDocument(document);
                 }
                 centerImage.setImage(location, null, currentThumb != null ? new BitmapDrawable(currentThumb.bitmap) : null, -1, null, messageObject, 1);
             } else {
                 playerRetryPlayCount = 1;
                 actionBar.setTitle(LocaleController.getString(R.string.DisappearingVideo));
-                File f = new File(messageObject.messageOwner.attachPath);
-                if (f.exists()) {
+                File f = messageObject.messageOwner.attachPath != null ? new File(messageObject.messageOwner.attachPath) : null;
+                if (f != null && f.exists()) {
                     preparePlayer(f);
                 } else {
                     File file = FileLoader.getInstance(currentAccount).getPathToMessage(messageObject.messageOwner);
-                    File encryptedFile = new File(file.getAbsolutePath() + ".enc");
-                    if (encryptedFile.exists()) {
-                        file = encryptedFile;
+                    if (file != null) {
+                        File encryptedFile = new File(file.getAbsolutePath() + ".enc");
+                        if (encryptedFile.exists()) {
+                            file = encryptedFile;
+                        }
                     }
                     preparePlayer(file);
                 }
@@ -1563,14 +1581,26 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         try {
             if (windowView.getParent() != null) {
                 WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
-                wm.removeView(windowView);
+                wm.removeViewImmediate(windowView);
             }
         } catch (Exception e) {
             FileLog.e(e);
         }
 
-        WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
-        wm.addView(windowView, windowLayoutParams);
+        if (!SharedConfig.disableSecureFlags && !it.belloworld.mercurygram.hallagram.HallagramConfig.allowScreenshots) {
+            windowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_SECURE;
+        } else {
+            windowLayoutParams.flags &= ~WindowManager.LayoutParams.FLAG_SECURE;
+        }
+
+        try {
+            WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
+            wm.addView(windowView, windowLayoutParams);
+        } catch (Exception e) {
+            FileLog.e(e);
+            destroyPhotoViewer();
+            return;
+        }
         secretDeleteTimer.invalidate();
         isVisible = true;
 
@@ -1609,7 +1639,9 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             }
             containerView.setLayerType(View.LAYER_TYPE_NONE, null);
             containerView.invalidate();
-            secretDeleteTimer.setDestroyTime(messageObject.messageOwner.destroyTimeMillis, messageObject.messageOwner.ttl, false);
+            if (!ignoreDelete) {
+                secretDeleteTimer.setDestroyTime(messageObject.messageOwner.destroyTimeMillis, messageObject.messageOwner.ttl, false);
+            }
             if (closeAfterAnimation) {
                 closePhoto(true, true);
             } else {
@@ -1636,7 +1668,9 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         photoBackgroundDrawable.frame = 0;
         photoBackgroundDrawable.drawRunnable = () -> {
             disableShowCheck = false;
-            object.imageReceiver.setVisible(false, true);
+            if (object != null && object.imageReceiver != null) {
+                object.imageReceiver.setVisible(false, true);
+            }
         };
         imageMoveAnimation.start();
     }
@@ -1707,7 +1741,11 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
 
     public void destroyPhotoViewer() {
         if (onClose != null) {
-            onClose.run();
+            try {
+                onClose.run();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
             onClose = null;
         }
         if (activityVisibilityController != null) {

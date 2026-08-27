@@ -14524,10 +14524,19 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void doDeleteShowOnceTask(long taskId, long dialogId, int mid) {
-        getMessagesStorage().removePendingTask(taskId);
-        ArrayList<Integer> mids = new ArrayList<>();
-        mids.add(mid);
-        getMessagesStorage().emptyMessagesMedia(dialogId, mids);
+        try {
+            if (taskId != 0) {
+                getMessagesStorage().removePendingTask(taskId);
+            }
+            ArrayList<Integer> mids = new ArrayList<>();
+            mids.add(mid);
+            getMessagesStorage().emptyMessagesMedia(dialogId, mids);
+        } catch (Exception e) {
+            FileLog.e(e);
+            if (taskId != 0) {
+                getMessagesStorage().removePendingTask(taskId);
+            }
+        }
     }
 
     public void markMessageAsRead2(long dialogId, int mid, TLRPC.InputChannel inputChannel, int ttl, long taskId) {

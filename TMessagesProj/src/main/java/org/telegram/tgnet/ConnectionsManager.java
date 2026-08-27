@@ -430,6 +430,7 @@ public class ConnectionsManager extends BaseController {
                         affectedHistory.offset = 0;
                         mockResponse = affectedHistory;
                     } else if (object instanceof TLRPC.TL_channels_readHistory ||
+                        object instanceof TLRPC.TL_channels_readMessageContents ||
                         object instanceof TLRPC.TL_messages_readEncryptedHistory ||
                         object instanceof TLRPC.TL_messages_readDiscussion) {
                         shouldBlock = true;

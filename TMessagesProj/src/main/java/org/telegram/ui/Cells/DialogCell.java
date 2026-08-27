@@ -5730,11 +5730,15 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         boolean isVideo = false;
         if (media instanceof TLRPC.TL_messageMediaPhoto) {
             object = media.photo;
-            photoThumbs = media.photo.sizes;
+            if (media.photo != null) {
+                photoThumbs = media.photo.sizes;
+            }
         } else if (media instanceof TLRPC.TL_messageMediaDocument) {
             isVideo = MessageObject.isVideoDocument(media.document);
             object = media.document;
-            photoThumbs = media.document.thumbs;
+            if (media.document != null) {
+                photoThumbs = media.document.thumbs;
+            }
         }
 
         TLRPC.PhotoSize smallThumb = FileLoader.getStrippedPhotoSize(photoThumbs);

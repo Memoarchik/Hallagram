@@ -135,8 +135,13 @@ public class ImageLocation {
         int dc_id;
         if (photo.dc_id != 0) {
             dc_id = photo.dc_id;
-        } else {
+        } else if (photoSize.location != null) {
             dc_id = photoSize.location.dc_id;
+        } else {
+            dc_id = 0;
+        }
+        if (photoSize.location == null) {
+            return null;
         }
         return getForPhoto(photoSize.location, photoSize.size, photo, null, null, TYPE_SMALL, dc_id, null, photoSize.type);
     }
