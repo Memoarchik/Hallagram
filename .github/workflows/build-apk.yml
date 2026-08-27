@@ -1,0 +1,151 @@
+name: Build Hallagram APK
+
+on:
+  push:
+    branches:
+      - Mercurygram
+      - main
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build APK (${{ matrix.abi }}-${{ matrix.build_type }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - flavor: afatFdArm64
+            abi: arm64-v8a
+            build_type: debug
+            task: assembleAfatFdArm64Debug
+          - flavor: afatFdArm64
+            abi: arm64-v8a
+            build_type: release
+            task: assembleAfatFdArm64Release
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Install Host Build Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends             gperf meson libuv1-dev nasm cmake autoconf automake libtool pkg-config ninja-build
+
+      - name: Setup API Keys
+        run: |
+          APP_ID="${{ secrets.APP_ID }}"
+          APP_HASH="${{ secrets.APP_HASH }}"
+          if [ -z "$APP_ID" ] || [ -z "$APP_HASH" ]; then
+            APP_ID="4"
+            APP_HASH="014b35b6184100b085b0d0572f9b5103"
+          fi
+          echo "APP_ID = $APP_ID" > API_KEYS
+          echo "APP_HASH = $APP_HASH" >> API_KEYS
+
+      - name: Setup local.properties
+        run: |
+          echo "MG_BUILD_TAG=11.12.0.1" > local.properties
+
+      - name: Setup Signing Keystore
+        run: |
+          mkdir -p TMessagesProj/config
+          if [ -n "${{ secrets.RELEASE_KEYSTORE }}" ]; then
+            echo "${{ secrets.RELEASE_KEYSTORE }}" | base64 -d > TMessagesProj/config/release.keystore
+          fi
+
+      - name: Build APK with Gradle
+        env:
+          KS_PASS: ${{ secrets.RELEASE_KEYSTORE_PASSWORD || 'android' }}
+          KS_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS || 'androidkey' }}
+          KS_KEY_PASS: ${{ secrets.RELEASE_KEY_PASSWORD || 'android' }}
+        run: |
+          ./gradlew "${{ matrix.task }}"             -PRELEASE_STORE_PASSWORD="$KS_PASS"             -PRELEASE_KEY_PASSWORD="$KS_KEY_PASS"             -PRELEASE_KEY_ALIAS="$KS_KEY_ALIAS"             -PMG_BUILD_TAG="11.12.0.1"             --no-daemon --stacktrace
+
+      - name: Find and Prepare Output APK
+        id: prepare_apk
+        run: |
+          mkdir -p build_output
+          APK_FILE=$(find TMessagesProj_App/build/outputs/apk/${{ matrix.flavor }}/${{ matrix.build_type }} -name "*.apk" | head -n 1)
+          if [ -f "$APK_FILE" ]; then
+            OUTPUT_NAME="Hallagram-${{ matrix.abi }}-${{ matrix.build_type }}.apk"
+            cp "$APK_FILE" "build_output/$OUTPUT_NAME"
+            echo "apk_file=build_output/$OUTPUT_NAME" >> "$GITHUB_OUTPUT"
+            echo "apk_name=$OUTPUT_NAME" >> "$GITHUB_OUTPUT"
+            echo "Found APK: $APK_FILE -> build_output/$OUTPUT_NAME"
+            ls -lh "build_output/$OUTPUT_NAME"
+          else
+            echo "Error: APK file not found!"
+            exit 1
+          fi
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.prepare_apk.outputs.apk_name }}
+          path: ${{ steps.prepare_apk.outputs.apk_file }}
+
+  publish_release:
+    name: Publish GitHub Release
+    needs: build
+    if: github.ref == 'refs/heads/Mercurygram' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all APK artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all_apks
+          merge-multiple: true
+
+      - name: List downloaded APKs
+        run: ls -la all_apks/
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-build
+          name: "Hallagram Latest Build"
+          draft: false
+          prerelease: false
+          body: |
+            ### ?? Hallagram Automatic Build
+            Automated build triggered by commit `${{ github.sha }}`.
+
+            **Features included in this build:**
+            - ?? **Ghost Mode:** Anonymous message reading, story viewing, online status hiding, typing indicator hiding
+            - ??? **Read on Interact:** Automatically marks messages as read when sending a reply or emoji reaction
+            - ??? **Protected Content Forwarding:** Bypass restricted channel forward protections (sends clean copy without author/watermark)
+            - ? **Speed Boost:** Optimized download & upload pipelines
+            - ?? **Mobile Internet (4G/5G) Fix:** Rock-solid stability on cellular networks
+            - ?? **Anti-Screenshot & Live Photo Bypass**
+          files: all_apks/*.apk
