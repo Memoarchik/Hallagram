@@ -49,7 +49,7 @@ public class HallagramSettingsActivity extends UniversalFragment {
             topLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 2));
 
             TextView subtitleView = new TextView(context);
-            subtitleView.setText("2026.08");
+            subtitleView.setText("v1.4");
             subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
             topLayout.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
@@ -65,7 +65,7 @@ public class HallagramSettingsActivity extends UniversalFragment {
 
         // Links / Info
         items.add(UItem.asHeader("About"));
-        items.add(UItem.asSettingsCell(ID_ABOUT, R.drawable.msg_help, "Version", "v1.0 (ARM64)"));
+        items.add(UItem.asSettingsCell(ID_ABOUT, R.drawable.msg_help, "Version", "v1.4 (ARM64)"));
         items.add(UItem.asShadow(null));
     }
 

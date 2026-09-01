@@ -822,7 +822,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     TLRPC.TL_messages_getUnreadReactions req = new TLRPC.TL_messages_getUnreadReactions();
                     req.peer = getMessagesController().getInputPeer(dialogId);
                     req.limit = 1;
-                    req.add_offset = count - 1;
+                    req.add_offset = Math.max(0, count - 1);
                     if (isMonoForum(dialogId) && topicId != 0) {
                         req.saved_peer_id = getInputPeer(topicId);
                         req.flags |= 2;
@@ -832,7 +832,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     TLRPC.TL_messages_getUnreadPollVotes req = new TLRPC.TL_messages_getUnreadPollVotes();
                     req.peer = getMessagesController().getInputPeer(dialogId);
                     req.limit = 1;
-                    req.add_offset = count - 1;
+                    req.add_offset = Math.max(0, count - 1);
                     request = req;
                 }
                 getConnectionsManager().sendRequestTyped(request, AndroidUtilities::runOnUIThread, (res, error) -> {
@@ -1603,8 +1603,8 @@ public class MessagesController extends BaseController implements NotificationCe
         canRevokePmInbox = mainPreferences.getBoolean("canRevokePmInbox", canRevokePmInbox);
         preloadFeaturedStickers = mainPreferences.getBoolean("preloadFeaturedStickers", false);
         youtubePipType = mainPreferences.getString("youtubePipType", "disabled");
-        keepAliveService = mainPreferences.getBoolean("keepAliveService", false);
-        backgroundConnection = mainPreferences.getBoolean("backgroundConnection", false);
+        keepAliveService = mainPreferences.getBoolean("keepAliveService", true);
+        backgroundConnection = mainPreferences.getBoolean("backgroundConnection", true);
         promoDialogId = mainPreferences.getLong("proxy_dialog", 0);
         if (SharedConfig.removeAdsAndProxySponsor) {
             promoDialogId = 0;

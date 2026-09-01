@@ -422,13 +422,6 @@ public class ConnectionsManager extends BaseController {
                         affected.pts = -1;
                         affected.pts_count = 0;
                         mockResponse = affected;
-                    } else if (object instanceof TLRPC.TL_messages_readReactions) {
-                        shouldBlock = true;
-                        TLRPC.TL_messages_affectedHistory affectedHistory = new TLRPC.TL_messages_affectedHistory();
-                        affectedHistory.pts = -1;
-                        affectedHistory.pts_count = 0;
-                        affectedHistory.offset = 0;
-                        mockResponse = affectedHistory;
                     } else if (object instanceof TLRPC.TL_channels_readHistory ||
                         object instanceof TLRPC.TL_channels_readMessageContents ||
                         object instanceof TLRPC.TL_messages_readEncryptedHistory ||

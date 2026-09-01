@@ -3041,11 +3041,17 @@ public class ChatActivity extends BaseFragment implements
                 if (startLoadFromMessageId == 0) {
                     SharedPreferences sharedPreferences = MessagesController.getNotificationsSettings(currentAccount);
                     int messageId = sharedPreferences.getInt("diditem" + NotificationsController.getSharedPrefKey(dialog_id, getTopicId()), 0);
+                    TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(dialog_id);
                     if (messageId != 0) {
-                        wasManualScroll = true;
-                        loadingFromOldPosition = true;
-                        startLoadFromMessageOffset = sharedPreferences.getInt("diditemo" + NotificationsController.getSharedPrefKey(dialog_id, getTopicId()), 0);
-                        startLoadFromMessageId = messageId;
+                        if (dialog != null && (dialog.unread_count > 0 || (dialog.top_message > 0 && dialog.top_message - messageId > 40))) {
+                            sharedPreferences.edit().remove("diditem" + NotificationsController.getSharedPrefKey(dialog_id, getTopicId()))
+                                    .remove("diditemo" + NotificationsController.getSharedPrefKey(dialog_id, getTopicId())).apply();
+                        } else {
+                            wasManualScroll = true;
+                            loadingFromOldPosition = true;
+                            startLoadFromMessageOffset = sharedPreferences.getInt("diditemo" + NotificationsController.getSharedPrefKey(dialog_id, getTopicId()), 0);
+                            startLoadFromMessageId = messageId;
+                        }
                     }
                 } else {
                     showScrollToMessageError = true;
