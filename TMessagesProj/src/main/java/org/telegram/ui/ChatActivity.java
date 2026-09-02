@@ -3039,18 +3039,20 @@ public class ChatActivity extends BaseFragment implements
                 getMessagesController().loadPeerSettings(currentUser, currentChat);
 
                 if (startLoadFromMessageId == 0) {
-                    SharedPreferences sharedPreferences = MessagesController.getNotificationsSettings(currentAccount);
-                    int messageId = sharedPreferences.getInt("diditem" + NotificationsController.getSharedPrefKey(dialog_id, getTopicId()), 0);
-                    TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(dialog_id);
-                    if (messageId != 0) {
-                        if (dialog != null && (dialog.unread_count > 0 || (dialog.top_message > 0 && dialog.top_message - messageId > 40))) {
-                            sharedPreferences.edit().remove("diditem" + NotificationsController.getSharedPrefKey(dialog_id, getTopicId()))
-                                    .remove("diditemo" + NotificationsController.getSharedPrefKey(dialog_id, getTopicId())).apply();
-                        } else {
-                            wasManualScroll = true;
-                            loadingFromOldPosition = true;
-                            startLoadFromMessageOffset = sharedPreferences.getInt("diditemo" + NotificationsController.getSharedPrefKey(dialog_id, getTopicId()), 0);
-                            startLoadFromMessageId = messageId;
+                    if (!it.belloworld.mercurygram.hallagram.HallagramConfig.ghostMode || !it.belloworld.mercurygram.hallagram.HallagramConfig.dontSendRead) {
+                        SharedPreferences sharedPreferences = MessagesController.getNotificationsSettings(currentAccount);
+                        int messageId = sharedPreferences.getInt("diditem" + NotificationsController.getSharedPrefKey(dialog_id, getTopicId()), 0);
+                        TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(dialog_id);
+                        if (messageId != 0) {
+                            if (dialog != null && (dialog.unread_count > 0 || (dialog.top_message > 0 && dialog.top_message - messageId > 40))) {
+                                sharedPreferences.edit().remove("diditem" + NotificationsController.getSharedPrefKey(dialog_id, getTopicId()))
+                                        .remove("diditemo" + NotificationsController.getSharedPrefKey(dialog_id, getTopicId())).apply();
+                            } else {
+                                wasManualScroll = true;
+                                loadingFromOldPosition = true;
+                                startLoadFromMessageOffset = sharedPreferences.getInt("diditemo" + NotificationsController.getSharedPrefKey(dialog_id, getTopicId()), 0);
+                                startLoadFromMessageId = messageId;
+                            }
                         }
                     }
                 } else {
@@ -3282,7 +3284,8 @@ public class ChatActivity extends BaseFragment implements
                 if (historyPreloaded) {
                     lastLoadIndex++;
                 } else {
-                    getMessagesController().loadMessages(dialog_id, mergeDialogId, loadInfo, initialMessagesSize, startLoadFromMessageId, 0, true, 0, classGuid, 2, 0, chatMode, threadMessageId, replyMaxReadId, lastLoadIndex++, isTopic);
+                    int loadType = (it.belloworld.mercurygram.hallagram.HallagramConfig.ghostMode && it.belloworld.mercurygram.hallagram.HallagramConfig.dontSendRead) ? 0 : 2;
+                    getMessagesController().loadMessages(dialog_id, mergeDialogId, loadInfo, initialMessagesSize, startLoadFromMessageId, 0, true, 0, classGuid, loadType, 0, chatMode, threadMessageId, replyMaxReadId, lastLoadIndex++, isTopic);
                 }
             }
             if ((chatMode == 0 || chatMode == MODE_SAVED && getSavedDialogId() == getUserConfig().getClientUserId()) && (!isThreadChat() || isTopic)) {

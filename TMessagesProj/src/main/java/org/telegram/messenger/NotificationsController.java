@@ -443,6 +443,9 @@ public class NotificationsController extends BaseController implements Notificat
         notificationsQueue.postRunnable(() -> {
             openedDialogId = dialog_id;
             openedTopicId = topicId;
+            if (dialog_id != 0) {
+                removeNotificationsForDialog(dialog_id);
+            }
         });
     }
 

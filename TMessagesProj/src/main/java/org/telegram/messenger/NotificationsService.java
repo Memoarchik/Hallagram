@@ -37,21 +37,25 @@ public class NotificationsService extends Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             try {
                 NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-                // IMPORTANCE_LOW: silent, no heads-up — keeps the OS battery-warning nag to a minimum (Notifications.md).
-                NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "Push Notifications Service", NotificationManager.IMPORTANCE_LOW);
+                NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "Push Service", NotificationManager.IMPORTANCE_LOW);
+                channel.setDescription("Background service for instant notifications");
                 notificationManager.createNotificationChannel(channel);
-                Intent explainIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Mercurygram/Mercurygram/blob/Mercurygram/Notifications.md"));
+                Intent launchIntent = new Intent(this, org.telegram.ui.LaunchActivity.class);
+                launchIntent.setAction(Intent.ACTION_MAIN);
+                launchIntent.addCategory(Intent.CATEGORY_LAUNCHER);
                 int piFlags = PendingIntent.FLAG_UPDATE_CURRENT;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    piFlags |= PendingIntent.FLAG_IMMUTABLE; // mandatory on API 31+ (orig 2019 patch passed 0 -> crash on S+)
+                    piFlags |= PendingIntent.FLAG_IMMUTABLE;
                 }
-                PendingIntent explainPendingIntent = PendingIntent.getActivity(this, 0, explainIntent, piFlags);
+                PendingIntent contentPendingIntent = PendingIntent.getActivity(this, 0, launchIntent, piFlags);
                 Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                        .setContentIntent(explainPendingIntent)
+                        .setContentTitle("Hallagram")
+                        .setContentText("Push service is running in background")
+                        .setContentIntent(contentPendingIntent)
                         .setShowWhen(false)
                         .setOngoing(true)
                         .setSmallIcon(R.drawable.notification)
-                        .setContentText("Push service: tap to learn more")
+                        .setPriority(NotificationCompat.PRIORITY_MIN)
                         .build();
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     // dataSync type required on API 34+ to match the manifest declaration.
